@@ -2,38 +2,38 @@ version: '2.1'
 
 services:
 
-  nodeexporter:
-    image: prom/node-exporter
-    container_name: nodeexporter
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
-    restart: unless-stopped
-    ports:
-      - 9100:9100
-    labels:
-      org.label-schema.group: "monitoring"
+  # nodeexporter:
+  #   image: prom/node-exporter
+  #   container_name: nodeexporter
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - '--path.procfs=/host/proc'
+  #     - '--path.rootfs=/rootfs'
+  #     - '--path.sysfs=/host/sys'
+  #     - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+  #   restart: unless-stopped
+  #   ports:
+  #     - 9100:9100
+  #   labels:
+  #     org.label-schema.group: "monitoring"
 
-  cadvisor:
-    image: google/cadvisor
-    container_name: cadvisor
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /cgroup:/cgroup:ro
-    restart: unless-stopped
-    ports:
-      - 9101:8080
-    labels:
-      org.label-schema.group: "monitoring"
+  # cadvisor:
+  #   image: google/cadvisor
+  #   container_name: cadvisor
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:rw
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - /cgroup:/cgroup:ro
+  #   restart: unless-stopped
+  #   ports:
+  #     - 9101:8080
+  #   labels:
+  #     org.label-schema.group: "monitoring"
   
 
 
@@ -54,21 +54,150 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
-  # blackexporter:
+  # blackbox-exporter:
   #   image: bitnami/blackbox-exporter
-  #   container_name: blackexporter
+  #   container_name: blackbox-exporter
   #   restart: unless-stopped
   #   ports:
   #     - 9103:9115
   #   labels:
   #     org.label-schema.group: "monitoring"
 
-  # portainer:
-  #   image: portainer/portainer
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    ports:
+      - "9103:9115"
+    dns: 8.8.8.8
+    # volumes:
+    #   - "/root/config/blackbox.yml:/config/blackbox.yml"
+    # command: 
+    #   - "--config.file=/config/blackbox.yml"
+
+
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+    - "9104:9000"
+    command: -H unix:///var/run/docker.sock
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      org.label-schema.group: "monitoring"
+############################################
+  dev-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: dev-mysql-exporter
+    restart: unless-stopped
+    ports: 
+    - "9201:9104"
+    environment: 
+    - "DATA_SOURCE_NAME=root:password@(mysql-infra-dev.ceshi22.com:3306)/"
+
+  stg-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: stg-mysql-exporter
+    restart: unless-stopped
+    ports: 
+    - "9202:9104"
+    environment: 
+    - "DATA_SOURCE_NAME=root:12345678@(mysql-infra-stg.ceshi22.com:3306)/"
+
+  uat-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: uat-mysql-exporter
+    restart: unless-stopped
+    ports: 
+    - "9203:9104"
+    environment: 
+    - "DATA_SOURCE_NAME=root:z15sGjac@(mysql-infra-uat.ceshi22.com:3306)/"
+#########################################
+  # dev-mongodb-exporter:
+  #   image: elarasu/mongodb_exporter
+  #   container_name: dev-mongodb-exporter
+  #   restart: unless-stopped
   #   ports:
-  #   - "9104:9000"
-  #   command: -H unix:///var/run/docker.sock
-  #   volumes:
-  #   - /var/run/docker.sock:/var/run/docker.sock
-  #   labels:
-  #     org.label-schema.group: "monitoring"
+  #     - 9301:9104
+  #   # environment:
+  #   #   - "MONGODB_URL=mongodb://mongo-infra-dev.ceshi22.com:30102"
+  # stg-mongodb-exporter:
+  #   image: elarasu/mongodb_exporter
+  #   container_name: stg-mongodb-exporter
+  #   restart: unless-stopped
+  #   ports:
+  #     - 9302:9104
+  #   # environment:
+  #   #   - "MONGODB_URL=mongodb://mongo-infra-stg.ceshi22.com:30102"
+  # uat-mongodb-exporter:
+  #   image: elarasu/mongodb_exporter
+  #   container_name: uat-mongodb-exporter
+  #   restart: unless-stopped
+  #   ports:
+  #     - 9303:9104
+  #   # environment:
+  #   #   - "MONGODB_URL=mongodb://mongo-infra-uat.ceshi22.com:30102"
+#########################################
+  dev-redis-exporter:
+    image: oliver006/redis_exporter:v0.15.0
+    container_name: dev-redis-exporter
+    ports:
+      - 9401:9121
+    command:
+      - '--redis.addr=redis://redis-infra-dev.ceshi22.com:30103'
+
+  stg-redis-exporter:
+    image: oliver006/redis_exporter:v0.15.0
+    container_name: stg-redis-exporter
+    ports:
+      - 9402:9121
+    command:
+      - '--redis.addr=redis://redis-infra-stg.ceshi22.com:30103'
+
+  uat-redis-exporter:
+    image: oliver006/redis_exporter:v0.15.0
+    container_name: uat-redis-exporter
+    ports:
+      - 9403:9121
+    command:
+      - '--redis.addr=redis://redis-infra-uat.ceshi22.com:30103'
+#########################################
+  dev-zookeeper-exporter:
+    image: dabealu/zookeeper-exporter
+    container_name: dev-zookeeper-exporter
+    ports:
+      - 9501:8080
+  stg-zookeeper-exporter:
+    image: dabealu/zookeeper-exporter
+    container_name: stg-zookeeper-exporter
+    ports:
+      - 9502:8080
+  uat-zookeeper-exporter:
+    image: dabealu/zookeeper-exporter
+    container_name: uat-zookeeper-exporter
+    ports:
+      - 9503:8080
+#########################################
+  dev-kafka-exporter:
+    image: danielqsj/kafka-exporter
+    container_name: dev-kafka-exporter
+    ports:
+      - 9601:9308
+    command:
+      - '--kafka.server=kafka-infra-dev.ceshi22.com:30104'
+  stg-kafka-exporter:
+    image: danielqsj/kafka-exporter
+    container_name: stg-kafka-exporter
+    ports:
+      - 9602:9308
+    command:
+      - '--kafka.server=kafka-infra-stg.ceshi22.com:30104'
+  uat-kafka-exporter:
+    image: danielqsj/kafka-exporter
+    container_name: uat-kafka-exporter
+    ports:
+      - 9603:9308 
+    command:
+      - '--kafka.server=kafka-infra-uat.ceshi22.com:30104'
